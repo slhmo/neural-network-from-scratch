@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from src.temp2 import ArtificialNeuralNetworks
+
 # 4 layer, 784? * n * m * 10 neural network
 
 # col0 = y and each row a sample and other cols correspond to pixels
@@ -23,4 +25,19 @@ test = dataset[g_test].reset_index(drop=True)
 
 print(f"Train shape: {train.shape}, Test shape: {test.shape}")
 
+n_train_samples = 5000
+x_train = np.array(train.iloc[:n_train_samples, 1:]) / 255.0
+y_train = np.array(train.iloc[:, 0])
 
+y_train = np.eye(10)[y_train]       # one hot encoding
+
+ann = ArtificialNeuralNetworks((784, 16, 16, 10))
+ann.fit(x_train, y_train, activation_function='sigmoid')
+
+n_test_samples = 100
+x_test = np.array(test.iloc[:n_test_samples, 1:]) / 255.0
+y_test = np.array(test.iloc[:n_test_samples, 0])
+tmp = ann.predict_probabilities(x_test, 'sigmoid')
+
+for i in range(5):
+    print(f'prediction: {np.argmax(tmp[i])}, label: {y_test[i]}')

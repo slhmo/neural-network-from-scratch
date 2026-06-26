@@ -53,16 +53,32 @@ class ArtificialNeuralNetworks:
         else:
             raise ValueError(f"Invalid func: '{activation_function}'. ""Expected 'relu' or 'sigmoid'.")
 
-        # provided a value for each neuron in the first layer, we have to calculate final layer's neurons values
-        # e.g. 1'st neuron on layer2 (a0(1)) => (w0,0,0*a0(0) + w0,0,1*a1(0) etc.)
-        self.layers[0] = x
-        self.zs = list()
-        for i in range(0, len(self.layers)-1):
-            z = self.weights[i] @ self.layers[i]+self.biases[i]
-            self.zs.append(z)
-            self.layers[i+1] = activation_f(z)
 
-        return self.layers[-1].copy()
+        if x.ndim == 1:     # vector(used in fit)
+            self.layers[0] = x
+            self.zs = list()
+            for i in range(0, len(self.layers)-1):
+                z = self.weights[i] @ self.layers[i]+self.biases[i]
+                self.zs.append(z)
+                self.layers[i+1] = activation_f(z)
+
+            return self.layers[-1].copy()
+
+        else:       # dataset(usual stuff)
+            num_samples = x.shape[0]
+            results = np.zeros((num_samples, self.layers[-1].size), dtype=np.float32)
+            for j in range(x.shape[0]):         # row samples
+                # provided a value for each neuron in the first layer, we have to calculate final layer's neurons values
+                # e.g. 1'st neuron on layer2 (a0(1)) => (w0,0,0*a0(0) + w0,0,1*a1(0) etc.)
+                self.layers[0] = x[j]
+                self.zs = list()
+                for i in range(0, len(self.layers)-1):
+                    z = self.weights[i] @ self.layers[i]+self.biases[i]
+                    self.zs.append(z)
+                    self.layers[i+1] = activation_f(z)
+                results[j] = self.layers[-1].copy()
+
+        return results
 
 
     def fit(self, x, y, method='standard', activation_function='relu', learning_rate=0.01, epochs=100, batch_size=None):
