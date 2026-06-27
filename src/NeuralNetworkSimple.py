@@ -108,12 +108,11 @@ class ArtificialNeuralNetworks:
         return results
 
 
-    def fit(self, x, y, method='standard', activation_function='relu', learning_rate=0.01, epochs=100, batch_size=None):
+    def fit(self, x, y, method='standard', learning_rate=0.01, epochs=100, batch_size=None):
         """
         :param x: x train
         :param y: y train
         :param method: 'standard' or 'stochastic'
-        :param activation_function: 'relu' or 'sigmoid'
         :param learning_rate:
         :param epochs: n-gradient descent repetitions
         :param batch_size: batch size for stochastic gd
