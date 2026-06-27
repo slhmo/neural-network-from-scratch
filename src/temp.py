@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from src.temp2 import ArtificialNeuralNetworks
+from src.NeuralNetworkSimple import ArtificialNeuralNetworks
 
 # 4 layer, 784? * n * m * 10 neural network
 
