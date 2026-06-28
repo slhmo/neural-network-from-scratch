@@ -48,7 +48,7 @@ class ArtificialNeuralNetworks:
             he_scale = np.sqrt(2.0 / input_size)
             xavier_scale = np.sqrt(1.0 / input_size)
             scale = he_scale if activation_function=='relu' else xavier_scale
-            scale = scale if i==len(self.layers)-2 else he_scale if final_layer_activation=='relu' else xavier_scale    # not ideal to have many branches in a loop,
+            scale = scale if i!=len(self.layers)-2 else he_scale if final_layer_activation=='relu' else xavier_scale    # not ideal to have many branches in a loop,
             # however we're looping over depth of the network which is going to be a small constant so it's fine.
             self.weights.append(rng.standard_normal(shape, dtype=np.float32)*scale)
 
@@ -102,13 +102,13 @@ class ArtificialNeuralNetworks:
                 i = len(self.layers)-2
                 z = self.weights[i] @ self.layers[i] + self.biases[i]
                 self.zs.append(z)
-                self.layers[i + 1] = self.activation_f(z)
+                self.layers[i + 1] = self.f_activation_f(z)
                 results[j] = self.layers[-1].copy()
 
         return results
 
 
-    def fit(self, x, y, method='standard', learning_rate=0.01, epochs=100, batch_size=None):
+    def fit(self, x, y, learning_rate=0.01, epochs=100, batch_size=None):
         """
         :param x: x train
         :param y: y train
@@ -118,15 +118,7 @@ class ArtificialNeuralNetworks:
         :param batch_size: batch size for stochastic gd
         :return: none
         """
-        if method == 'standard':
-            self.__online_stochastic_gradient_descent(x, y, learning_rate, epochs)
-        elif method == 'stochastic':
-            self.__batched_stochastic_gradient_descent(x, y, learning_rate, epochs, batch_size)
-
-
-    def __batched_stochastic_gradient_descent(self, x_train, y_train, learning_rate, epochs, batch_size):
-        # todo
-        pass
+        self.__online_stochastic_gradient_descent(x, y, learning_rate, epochs)
 
 
     def __online_stochastic_gradient_descent(self, x_train, y_train, learning_rate, epochs):
@@ -134,7 +126,7 @@ class ArtificialNeuralNetworks:
             epoch_loss = 0.0
 
             for x, y in zip(x_train, y_train):
-                prediction = self.predict_probabilities(x)   # z
+                prediction = self.predict_probabilities(x)
                 epoch_loss += np.sum(np.power(prediction - y, 2))
 
                 weights_gradient = list()  # list
