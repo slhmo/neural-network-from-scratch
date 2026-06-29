@@ -1,13 +1,35 @@
 # Custom Neural Network from Scratch (NumPy)
 
-This repository contains a clean, from-scratch implementation of an Artificial Neural Network (ANN) using Python and NumPy. The project is designed to explicitly showcase the mathematical mechanics of deep learning—specifically forward propagation, weight initialization strategies, and backpropagation—without relying on heavy deep-learning frameworks like PyTorch or TensorFlow.
+This repository contains a clean, from-scratch implementation of an Artificial Neural Network (ANN) using Python and NumPy. The project is designed to explicitly showcase the mathematical foundations of deep learning—specifically forward propagation, weight initialization strategies, and backpropagation—without relying on heavy deep-learning frameworks like PyTorch or TensorFlow.
+
+---
+
+# Performance
+The benchmark below demonstrates the performance execution across the different implementations using the **MNIST dataset** with a **$(784, 16, 16, 10)$** network architecture, utilizing **ReLU** activation for the hidden layers and **Sigmoid** activation for the final output layer:
+
+![Framework Performance Comparison](src/framework_comparison1.png)
+
+---
+
+## Features
+
+* **Framework-Free Implementation:** Built entirely from scratch to expose the exact linear algebra and calculus mechanics powering deep neural networks.
+* **Multi-Tiered Code Architecture:**
+  * **Foundational (`NeuralNetworkSimple.py`):** Employs explicit loops and clean outer product calculations to transparently map the raw mathematics to code.
+  * **Vectorized CPU (`NeuralNetwork.py`):** Fully matrix-vectorized mini-batch pipeline leveraging NumPy for streamlined hardware execution.
+  * **GPU-Accelerated (`NeuralNetworksCuPy.py`):** A drop-in alternative utilizing CuPy and parallelized CUDA kernels for massive high-throughput processing.
+* **Smart Parameter Initialization:** Dynamically handles weight scaling by applying **He Initialization** for ReLU-activated layers and **Xavier Initialization** for Sigmoid-activated layers to eliminate vanishing or exploding gradients.
+* **Stable Stratified Splitting:** Includes a robust data-splitting utility that uses CRC32 hashing to guarantee perfectly reproducible and uncorrupted train/test distributions across dataset updates.
+
+---
 
 ## Repository Structure
 
 * **`src/NeuralNetworkSimple.py`**: The foundational implementation exposing the raw math, loops, and matrix transformations for clear understanding.
-* **`src/NeuralNetwork.py`**: A fully optimized, parallelized version leveraging NumPy's advanced vectorization capabilities for speed.
+* **`src/NeuralNetwork.py`**: A fully optimized, vectorized version leveraging NumPy's advanced vectorization capabilities for speed.
+* **`src/NeuralNetworksCuPy.py`**: A drop-in, highly parallelized alternative exploiting CuPy's GPU-accelerated vectorization.
 * **`src/utilz.py`**: Custom data-preprocessing utilities including stable stratified splitting.
-* **`src/temp.py`**: Sandboxed environment testing the network on the MNIST dataset.
+* **`src/test.py`**: Sandboxed environment testing the network on the MNIST dataset.
 
 ---
 
@@ -57,7 +79,7 @@ The network minimizes the Total Squared Error (Cost Function $C$) across the net
 
 $$C = \sum (a^{(L)} - y)^2$$
 
-Where $a^{(L)}$ is the final layer output prediction and $y$ is the one-hot encoded ground truth.
+Where $a^{(L)} is the final layer output prediction and $y$ is the one-hot encoded ground truth.
 
 #### Output Layer Error ($\delta^{(L)}$)
 The error gradient with respect to the output activation space is computed first:
@@ -83,7 +105,7 @@ $$\frac{\partial C}{\partial W^{(l)}} = \delta^{(l+1)} \otimes a^{(l)}$$
 In the implementation (`NeuralNetworkSimple.py`), the weight gradient is computed using `np.outer(delta, self.layers[i-1])`. 
 Mathematically, this elegant trick avoids nested loops by broadcasting the error vector across the activation states of the previous layer.
 
-For any weight $W_{jk}^{(l)}$ connecting neuron $k$ in layer $l$ to neuron $j$ in layer $l+1$, the individual gradient is defined as:
+For any weight $W_{jk}^{(l)}$ connecting neuron $k in layer $l$ to neuron $j$ in layer $l+1$, the individual gradient is defined as:
 
 $$\frac{\partial C}{\partial W_{jk}^{(l)}} = \delta_j^{(l+1)} \cdot a_k^{(l)}$$
 
@@ -91,7 +113,7 @@ If we look at this from a matrix operations perspective, calculating this for ev
 
 $$\frac{\partial C}{\partial W^{(l)}} = \delta^{(l+1)} (a^{(l)})^T$$
 
-> **Implementation Intuition:** > This is exactly what the code does. Instead of manually constructing a matching transformation matrix `temp` where each element holds the corresponding activation $a_k^{(l)}$ 
+> **Implementation Intuition:** This is exactly what the code does. Instead of manually constructing a matching transformation matrix `temp` where each element holds the corresponding activation $a_k^{(l)}$ 
 > and performing a traditional matrix dot product (`delta @ temp`), `np.outer()` takes the vector $\delta^{(l+1)}$ and multiplies it across the transposed activation vector $(a^{(l)})^T$ in a single, highly optimized step. 
 > This instantly yields the complete gradient matrix matching the shape of $W^{(l)}$.
 
@@ -115,13 +137,41 @@ This ensures that even if new data rows are appended to the dataset, your traini
 
 ---
 
+## Vectorized Mini-Batch Implementation (`NeuralNetwork.py`)
+
+To optimize processing speeds and fully leverage linear algebra hardware acceleration, the loops over individual rows are replaced with **full matrix vectorization**:
+
+* **Matrix-Based Activations:** Layer activations are transformed into matrices of shape $(n_l, m)$, where $m$ represents the number of samples in a batch. To maintain clean mathematical consistency while adhering to the standard input layout $X = (\text{samples}, \text{features})$, the input matrix is transposed immediately upon entry so that $\text{layer}[0]$ matches the required $(\text{features}, \text{samples})$ structural shape.
+* **Broadcasting Biases:** Biases are reshaped into 2D column vectors $(n_l, 1)$. This explicitly utilizes NumPy/CuPy broadcasting to automatically apply the bias vector across all sample columns simultaneously during the forward pass calculation: $z^{(l)} = W^{(l-1)} a^{(l-1)} + b^{(l-1)}$.
+* **Batch Gradient Accumulation:** Given a backpropagated error matrix $\delta$ of shape $(\text{neurons}_{out}, \text{samples})$ and a previous layer activation matrix of shape $(\text{neurons}_{in}, \text{samples})$, the execution of `delta @ self.layers[i-1].T` sums up the total gradients across all batch samples in a single matrix multiplication step, populating the full weight gradient matrix.
+* **Collapsing Bias Columns:** The cumulative bias gradient is isolated by collapsing sample columns via a summation across `axis=1`. The dimension integrity is preserved as a 2D column vector using `keepdims=True`.
+* **Averaging Parameter Updates:** All accumulated weight and bias gradients are divided by the total batch sample count $m$ prior to applying the learning rate $\alpha$, maintaining a normalized gradient descent execution path across arbitrary batch sizes:
+
+$$W^{(l)} \leftarrow W^{(l)} - \frac{\alpha}{m} \frac{\partial C}{\partial W^{(l)}}$$
+
+$$b^{(l)} \leftarrow b^{(l)} - \frac{\alpha}{m} \frac{\partial C}{\partial b^{(l)}}$$
+
+---
+
+## GPU-Accelerated Execution via CuPy (`NeuralNetworksCuPy.py`)
+
+For high-throughput environments, a parallelized GPU alternative is implemented using **CuPy**, acting as a drop-in replacement for the vectorized NumPy pipeline:
+
+* **Seamless Array Conversions:** Interoperability is managed by automatically shifting incoming host CPU arrays into dedicated graphics memory devices using `cp.asarray()`.
+* **Isolated Device Math:** All array manipulation, vector broadcasting, activation calculations, and backpropagation steps occur completely within parallelized CUDA hardware kernels.
+* **Asynchronous Memory Access:** To prevent device locking and maintain clean pipeline separation, evaluation outputs are explicitly converted back to standard host CPU objects via the `.get()` method within host-facing calls like `predict_probabilities()`.
+
+---
+
 ## Quick Start
 
 ### Installation
-Ensure you have the required dependencies installed:
+Ensure you have the base requirements installed:
 ```bash
 pip install -r requirements.txt
 ```
+⚠️ Optional GPU Requirement: If you want to utilize the GPU-accelerated framework variant (src/NeuralNetworksCuPy.py), you will need to install the cupy package matching your system's specific CUDA Toolkit version (e.g., pip install cupy-cuda12x). If you only intend to use the standard CPU vectorized version, no extra packages are necessary.
+
 ### Training the Model
 
 To run the placeholder training sequence using the MNIST dataset:

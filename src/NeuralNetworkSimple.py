@@ -160,7 +160,7 @@ class ArtificialNeuralNetworks:
                     self.biases[i] = self.biases[i] - bias_gradient[i]*learning_rate
 
             if epoch%10==0:
-                print(f'{epoch}\'th repetition. Total Squared Error: {epoch_loss:.4f}')
+                print(f'{epoch}\'th repetition. Mean Squared Error: {epoch_loss/x_train.shape[0]:.4f}')
 
 
 

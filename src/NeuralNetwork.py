@@ -1,9 +1,6 @@
 """
 Completed ArtificialNeuralNetworks class here exploiting NumPy's fast computations and vectorization.
 For a better grasp of the Math behind this, check "NeuralNetworkSimple.py" Where we essentially do the same computations using python loops.
-
-Bonus: This architecture is fully vectorized. If you happen to have a GPU and CuPy installed,
-you can swap import numpy as np for import cupy as np to run it on your graphics card.
 """
 import numpy as np
 
@@ -130,7 +127,7 @@ class ArtificialNeuralNetworks:
                 epoch_loss += self.__gradient_descent_step(x, y, learning_rate)
 
             if epoch%10==0:
-                print(f'{epoch}\'th repetition. Total Squared Error: {np.sum(epoch_loss):.4f}')
+                print(f'{epoch}\'th repetition. Mean Squared Error: {np.sum(epoch_loss)/m:.4f}')
 
 
 

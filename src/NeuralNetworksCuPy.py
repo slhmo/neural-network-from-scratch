@@ -130,7 +130,7 @@ class ArtificialNeuralNetworks:
 
             if epoch % 10 == 0:
                 # Update: Wrap cp.sum in float()
-                print(f'{epoch}\'th repetition. Total Squared Error: {float(cp.sum(epoch_loss)):.4f}')
+                print(f'{epoch}\'th repetition. Mean Squared Error: {float(cp.sum(epoch_loss)) / m:.6f}')
 
 
     def __gradient_descent_step(self, x_train, y_train, learning_rate):
