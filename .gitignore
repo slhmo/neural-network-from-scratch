@@ -3,4 +3,3 @@ venv
 src/data/mnist_train.csv
 src/__pycache__
 src/benchmark.py
-src/framework_comparison1.png

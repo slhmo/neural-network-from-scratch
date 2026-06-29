@@ -7,7 +7,7 @@ This repository contains a clean, from-scratch implementation of an Artificial N
 # Performance
 The benchmark below demonstrates the performance execution across the different implementations using the **MNIST dataset** with a **$(784, 16, 16, 10)$** network architecture, utilizing **ReLU** activation for the hidden layers and **Sigmoid** activation for the final output layer:
 
-![Framework Performance Comparison](src/framework_comparison1.png)
+![Framework Performance Comparison](src/data/framework_comparison.png)
 
 ---
 
